@@ -194,6 +194,7 @@ class HFLM(LM):
                 # os.environ['TRANSFORMERS_CACHE'] = 'D:\HF_cache'
                 from lm_eval.models.ringrwkv.modehf_world import RwkvForCausalLM
                 self._model = RwkvForCausalLM.from_pretrained(pretrained, cache_dir="D:\HF_cache")
+                self._model = self._model.half()
             else:
                 self._model = self.AUTO_MODEL_CLASS.from_pretrained(
                     pretrained,
@@ -245,10 +246,10 @@ class HFLM(LM):
         if "rwkv" in pretrained.lower() and "world" in pretrained.lower():
             # world need specific tokenizer
             from rwkv.rwkv_tokenizer import TRIE_TOKENIZER
-            import rwkv
+            from lm_eval.models import ringrwkv
 
-            path = os.path.dirname(rwkv.__file__)
-            self.tokenizer = TRIE_TOKENIZER(path+ '\\rwkv_vocab_v20230424.txt')
+            path = os.path.dirname(ringrwkv.__file__)
+            self.tokenizer = TRIE_TOKENIZER(path+ '\\rwkv_vocab_v20230424_special_token.txt')
             self.tokenizer.vocab_size = 65536
             self.tokenizer.eos_token_id = None
         else:
