@@ -189,15 +189,21 @@ class HFLM(LM):
                         model_kwargs["bnb_4bit_compute_dtype"] = utils.get_dtype(
                             bnb_4bit_compute_dtype
                         )
-            self._model = self.AUTO_MODEL_CLASS.from_pretrained(
-                pretrained,
-                revision=revision,
-                torch_dtype=utils.get_dtype(dtype),
-                low_cpu_mem_usage=low_cpu_mem_usage,
-                trust_remote_code=trust_remote_code,
-                load_in_8bit=load_in_8bit,
-                **model_kwargs,
-            )
+            if "rwkv" in pretrained.lower() and "world" in pretrained.lower():
+                # import os
+                # os.environ['TRANSFORMERS_CACHE'] = 'D:\HF_cache'
+                from lm_eval.models.ringrwkv.modehf_world import RwkvForCausalLM
+                self._model = RwkvForCausalLM.from_pretrained(pretrained, cache_dir="D:\HF_cache")
+            else:
+                self._model = self.AUTO_MODEL_CLASS.from_pretrained(
+                    pretrained,
+                    revision=revision,
+                    torch_dtype=utils.get_dtype(dtype),
+                    low_cpu_mem_usage=low_cpu_mem_usage,
+                    trust_remote_code=trust_remote_code,
+                    load_in_8bit=load_in_8bit,
+                    **model_kwargs,
+                )
         else:
             try:
                 from auto_gptq import AutoGPTQForCausalLM
@@ -236,13 +242,22 @@ class HFLM(LM):
                 eval_logger.info(
                     "Failed to place model onto specified device. This may be because the model is quantized via `bitsandbytes`. If the desired GPU is being used, this message is safe to ignore."
                 )
+        if "rwkv" in pretrained.lower() and "world" in pretrained.lower():
+            # world need specific tokenizer
+            from rwkv.rwkv_tokenizer import TRIE_TOKENIZER
+            import rwkv
 
-        self.tokenizer = transformers.AutoTokenizer.from_pretrained(
-            pretrained if tokenizer is None else tokenizer,
-            revision=revision,
-            trust_remote_code=trust_remote_code,
-            use_fast=use_fast_tokenizer,
-        )
+            path = os.path.dirname(rwkv.__file__)
+            self.tokenizer = TRIE_TOKENIZER(path+ '\\rwkv_vocab_v20230424.txt')
+            self.tokenizer.vocab_size = 65536
+            self.tokenizer.eos_token_id = None
+        else:
+            self.tokenizer = transformers.AutoTokenizer.from_pretrained(
+                pretrained if tokenizer is None else tokenizer,
+                revision=revision,
+                trust_remote_code=trust_remote_code,
+                use_fast=use_fast_tokenizer,
+            )
 
         self.truncation = truncation
 
@@ -423,7 +438,11 @@ class HFLM(LM):
         elif self.AUTO_MODEL_CLASS == transformers.AutoModelForSeq2SeqLM:
             add_special_tokens = True
 
-        encoding = self.tokenizer.encode(string, add_special_tokens=add_special_tokens)
+        from lm_eval.models.ringrwkv.modehf_world import RwkvForCausalLM
+        if type(self._model) == RwkvForCausalLM:
+            encoding = self.tokenizer.encode(string)
+        else:
+            encoding = self.tokenizer.encode(string, add_special_tokens=add_special_tokens)
 
         # left-truncate the encoded context to be at most `left_truncate_len` tokens long
         if left_truncate_len:
