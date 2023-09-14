@@ -1,5 +1,10 @@
 # Language Model Evaluation Harness
 
+## Supported RWKV world model
+
+python main.py --model hf-auto --model_args pretrained=xiaol/Huggingface-RWKV-claude-for-mobile-v4-world-1.5B-16k --tasks arc_challenge,hellaswag --device cuda
+
+
 ## Notice to Users
 (as of 6/15/23)
 We have a revamp of the Evaluation Harness library internals staged on the [big-refactor](https://github.com/EleutherAI/lm-evaluation-harness/tree/big-refactor) branch! It is far along in progress, but before we start to move the `master` branch of the repository over to this new design with a new version release, we'd like to ensure that it's been tested by outside users and there are no glaring bugs.

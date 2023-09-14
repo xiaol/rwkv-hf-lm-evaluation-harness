@@ -251,7 +251,7 @@ class HFLM(LM):
             path = os.path.dirname(ringrwkv.__file__)
             self.tokenizer = TRIE_TOKENIZER(path+ '\\rwkv_vocab_v20230424_special_token.txt')
             self.tokenizer.vocab_size = 65536
-            self.tokenizer.eos_token_id = None
+            self.tokenizer.eos_token_id = 261
         else:
             self.tokenizer = transformers.AutoTokenizer.from_pretrained(
                 pretrained if tokenizer is None else tokenizer,
